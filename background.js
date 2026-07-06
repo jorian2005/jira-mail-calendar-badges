@@ -14,6 +14,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     clearJiraCache().then(sendResponse);
     return true;
   }
+
+  if (message.type === "TEST_JIRA_CONNECTION") {
+    testJiraConnection().then(sendResponse);
+    return true;
+  }
 });
 
 async function fetchIssueWithCache(key) {
@@ -102,5 +107,47 @@ async function fetchIssueFromJira(key) {
     return { ok: false, key, error: `HTTP ${response.status}` };
   } catch (err) {
     return { ok: false, key, error: "Netwerkfout" };
+  }
+}
+
+async function testJiraConnection() {
+  const settings = await chrome.storage.local.get(["jiraUrl", "jiraEmail", "jiraToken"]);
+
+  if (!settings.jiraUrl || !settings.jiraEmail || !settings.jiraToken) {
+    return { ok: false, error: "Niet geconfigureerd" };
+  }
+
+  const cleanUrl = normalizeJiraUrl(settings.jiraUrl);
+  if (!cleanUrl) {
+    return { ok: false, error: "Ongeldige Jira-URL" };
+  }
+
+  const endpoint = `${cleanUrl}/rest/api/3/myself`;
+  const auth = toBase64(`${settings.jiraEmail}:${settings.jiraToken}`);
+
+  try {
+    const response = await fetch(endpoint, {
+      headers: {
+        Authorization: `Basic ${auth}`,
+        Accept: "application/json"
+      }
+    });
+
+    if (response.status === 200) {
+      const profile = await response.json();
+      return {
+        ok: true,
+        displayName: profile.displayName || settings.jiraEmail,
+        jiraUrl: cleanUrl
+      };
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, error: "Auth mislukt" };
+    }
+
+    return { ok: false, error: `HTTP ${response.status}` };
+  } catch (err) {
+    return { ok: false, error: "Netwerkfout" };
   }
 }

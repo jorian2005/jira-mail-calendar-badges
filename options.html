@@ -4,30 +4,204 @@
   <meta charset="utf-8" />
   <title>Jira Badge instellingen</title>
   <style>
-    body { font-family: sans-serif; padding: 16px; width: 360px; }
-    p { margin: 4px 0 12px; color: #44546f; font-size: 12px; }
-    label { display: block; margin-top: 10px; font-size: 13px; font-weight: 600; }
-    input { width: 100%; padding: 6px; margin-top: 4px; box-sizing: border-box; }
-    button { margin-top: 14px; padding: 8px 14px; background: #0052CC; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-    #status { margin-top: 10px; font-size: 12px; color: #00875A; }
+    :root {
+      --bg: #f6f8fc;
+      --card-bg: #ffffff;
+      --text: #172b4d;
+      --muted: #5e6c84;
+      --border: #dfe1e6;
+      --primary: #0052cc;
+      --primary-hover: #0747a6;
+      --focus: rgba(0, 82, 204, 0.2);
+      --success: #00875a;
+      --warning: #ff8b00;
+      --danger: #de350b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 340px;
+      max-width: 420px;
+      padding: 16px;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #f9fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid #ebedf0;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(9, 30, 66, 0.08);
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      line-height: 1.25;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .connection-status {
+      margin: 0 0 14px;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fafbfc;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .connection-status__label {
+      font-weight: 700;
+      color: #42526e;
+      margin-right: 6px;
+    }
+
+    .connection-status__value {
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .connection-status[data-state="checking"] .connection-status__value {
+      color: var(--warning);
+    }
+
+    .connection-status[data-state="connected"] .connection-status__value {
+      color: var(--success);
+    }
+
+    .connection-status[data-state="error"] .connection-status__value {
+      color: var(--danger);
+    }
+
+    .connection-status__hint {
+      margin-top: 4px;
+      color: var(--muted);
+    }
+
+    #settings-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #42526e;
+      letter-spacing: 0.2px;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 4px;
+      padding: 10px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    input::placeholder {
+      color: #97a0af;
+    }
+
+    input:hover {
+      border-color: #c1c7d0;
+    }
+
+    input:focus-visible {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+
+    button {
+      margin-top: 6px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.18s ease, transform 0.12s ease;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+
+    #status {
+      margin-top: 12px;
+      min-height: 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    @media (max-width: 370px) {
+      body {
+        min-width: 0;
+        padding: 12px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h3>Jira-instellingen</h3>
-  <p>Gebruik een Atlassian API-token (Account settings -> Security -> API tokens).</p>
-  <form id="settings-form">
-    <label for="jiraUrl">Jira-URL</label>
-    <input id="jiraUrl" placeholder="https://jouwbedrijf.atlassian.net" autocomplete="url" />
+  <div class="card">
+    <h3>Jira-instellingen</h3>
+    <p>Gebruik een Atlassian API-token (Account settings -> Security -> API tokens).</p>
+    <div id="connection-status" class="connection-status" data-state="idle">
+      <span class="connection-status__label">Verbindingsstatus:</span>
+      <span id="connection-status-value" class="connection-status__value">Nog niet gecontroleerd</span>
+      <div id="connection-status-hint" class="connection-status__hint"></div>
+    </div>
+    <form id="settings-form">
+      <label for="jiraUrl">Jira-URL</label>
+      <input id="jiraUrl" placeholder="https://jouwbedrijf.atlassian.net" autocomplete="url" />
 
-    <label for="jiraEmail">Atlassian e-mailadres</label>
-    <input id="jiraEmail" autocomplete="email" />
+      <label for="jiraEmail">Atlassian e-mailadres</label>
+      <input id="jiraEmail" autocomplete="email" />
 
-    <label for="jiraToken">API-token</label>
-    <input id="jiraToken" type="password" placeholder="Laat leeg om te behouden" autocomplete="off" />
+      <label for="jiraToken">API-token</label>
+      <input id="jiraToken" type="password" placeholder="Laat leeg om te behouden" autocomplete="off" />
 
-    <button id="save" type="submit">Opslaan</button>
-  </form>
-  <div id="status"></div>
+      <button id="save" type="submit">Opslaan</button>
+    </form>
+    <div id="status"></div>
+  </div>
 
   <script src="options.js"></script>
 </body>
