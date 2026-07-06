@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>Jira Badge instellingen</title>
+  <style>
+    body { font-family: sans-serif; padding: 16px; width: 360px; }
+    p { margin: 4px 0 12px; color: #44546f; font-size: 12px; }
+    label { display: block; margin-top: 10px; font-size: 13px; font-weight: 600; }
+    input { width: 100%; padding: 6px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 14px; padding: 8px 14px; background: #0052CC; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    #status { margin-top: 10px; font-size: 12px; color: #00875A; }
+  </style>
+</head>
+<body>
+  <h3>Jira-instellingen</h3>
+  <p>Gebruik een Atlassian API-token (Account settings -> Security -> API tokens).</p>
+  <form id="settings-form">
+    <label for="jiraUrl">Jira-URL</label>
+    <input id="jiraUrl" placeholder="https://jouwbedrijf.atlassian.net" autocomplete="url" />
+
+    <label for="jiraEmail">Atlassian e-mailadres</label>
+    <input id="jiraEmail" autocomplete="email" />
+
+    <label for="jiraToken">API-token</label>
+    <input id="jiraToken" type="password" placeholder="Laat leeg om te behouden" autocomplete="off" />
+
+    <button id="save" type="submit">Opslaan</button>
+  </form>
+  <div id="status"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>
