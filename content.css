@@ -30,3 +30,13 @@
 .jira-badge--error {
   background-color: #de350b;
 }
+
+.jira-badge-container--header {
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.jira-badge-container--header .jira-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+}

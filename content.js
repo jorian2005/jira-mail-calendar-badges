@@ -16,6 +16,11 @@ function colorForStatus(status) {
   return STATUS_COLORS[key] || STATUS_COLORS.default;
 }
 
+function textColorForStatus(status) {
+  const key = (status || "").toLowerCase();
+  return key === "to do" ? "#172B4D" : "#FFFFFF";
+}
+
 function extractKeys(text) {
   const matches = text.match(JIRA_KEY_REGEX) || [];
   return Array.from(new Set(matches)).slice(0, 3); // max 3 badges per rij, voorkomt overvolle UI
@@ -51,6 +56,7 @@ function buildBadge(issueData) {
   }
 
   badge.style.backgroundColor = colorForStatus(issueData.status);
+  badge.style.color = textColorForStatus(issueData.status);
   badge.textContent = `${issueData.key} · ${issueData.status}`;
   badge.title = issueData.summary;
 
@@ -106,17 +112,46 @@ async function processRow(row) {
   }
 }
 
+const HEADER_PROCESSED_ATTR = "data-jira-badge-header-processed";
+
+async function processOpenedEmailHeader() {
+  const subjectHeader = document.querySelector("h2.hP");
+  if (!subjectHeader) return;
+  if (subjectHeader.getAttribute(HEADER_PROCESSED_ATTR)) return;
+  subjectHeader.setAttribute(HEADER_PROCESSED_ATTR, "true");
+
+  const subjectText = subjectHeader.innerText || "";
+  const keys = extractKeys(subjectText);
+  if (keys.length === 0) return;
+
+  const container = document.createElement("span");
+  container.className = "jira-badge-container jira-badge-container--header";
+  subjectHeader.insertAdjacentElement("afterend", container);
+
+  for (const key of keys) {
+    try {
+      const issueData = await fetchIssue(key);
+      container.appendChild(buildBadge(issueData));
+    } catch (err) {
+      // Extension context kan invalide raken bij reload; negeer stil
+    }
+  }
+}
+
 function scanVisibleRows() {
   document.querySelectorAll("tr.zA").forEach(processRow);
 }
 
-// Gmail is een SPA — rijen worden dynamisch geladen/vervangen bij scrollen/navigeren.
 const observer = new MutationObserver(() => {
   clearTimeout(window.__jiraScanDebounce);
-  window.__jiraScanDebounce = setTimeout(scanVisibleRows, 300);
+  window.__jiraScanDebounce = setTimeout(() => {
+    scanVisibleRows();
+    processOpenedEmailHeader();
+  }, 300);
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
 
 // Eerste scan bij laden
 scanVisibleRows();
+processOpenedEmailHeader().then(r => {}).catch(e => {});
