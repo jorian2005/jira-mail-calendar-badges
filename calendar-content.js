@@ -1,11 +1,20 @@
 // Injects a Jira status section into opened Google Calendar event details.
 
 const JIRA_KEY_REGEX = /\b[A-Z]{2,3}-\d+\b/g;
-const MAX_BADGES_PER_EVENT = 3;
+const DEFAULT_MAX_BADGES_PER_ITEM = 3;
 const SCAN_DEBOUNCE_MS = 160;
+const DISPLAY_SETTING_KEYS = ["enableCalendarBadges", "maxBadgesPerItem", "projectWhitelist", "showExtraIssueInfo"];
 
 const ISSUE_IN_FLIGHT = new Map();
 const ROOT_STATE = new WeakMap();
+
+let displaySettings = {
+  enableCalendarBadges: true,
+  maxBadgesPerItem: DEFAULT_MAX_BADGES_PER_ITEM,
+  projectWhitelist: [],
+  showExtraIssueInfo: true
+};
+let settingsReady = null;
 
 const STATUS_COLORS = {
   "to do": "#DFE1E6",
@@ -34,9 +43,35 @@ function normalizeKey(key) {
   return (key || "").trim().toUpperCase();
 }
 
+function parseProjectWhitelist(rawValue) {
+  const source = Array.isArray(rawValue) ? rawValue : (rawValue || "").split(",");
+  return source
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => /^[A-Z]{2,10}$/.test(value));
+}
+
+function applyRawSettings(raw) {
+  const parsedMax = Number.parseInt(String(raw.maxBadgesPerItem ?? DEFAULT_MAX_BADGES_PER_ITEM), 10);
+  displaySettings = {
+    enableCalendarBadges: raw.enableCalendarBadges ?? true,
+    maxBadgesPerItem: Number.isInteger(parsedMax) ? Math.max(1, Math.min(5, parsedMax)) : DEFAULT_MAX_BADGES_PER_ITEM,
+    projectWhitelist: parseProjectWhitelist(raw.projectWhitelist),
+    showExtraIssueInfo: raw.showExtraIssueInfo ?? true
+  };
+}
+
+async function loadDisplaySettings() {
+  const raw = await chrome.storage.local.get(DISPLAY_SETTING_KEYS);
+  applyRawSettings(raw);
+}
+
 function extractKeys(text) {
   const matches = (text || "").toUpperCase().match(JIRA_KEY_REGEX) || [];
-  return Array.from(new Set(matches)).slice(0, MAX_BADGES_PER_EVENT);
+  const unique = Array.from(new Set(matches));
+  const filtered = displaySettings.projectWhitelist.length
+    ? unique.filter((key) => displaySettings.projectWhitelist.some((project) => key.startsWith(`${project}-`)))
+    : unique;
+  return filtered.slice(0, displaySettings.maxBadgesPerItem);
 }
 
 function fetchIssue(key) {
@@ -99,8 +134,19 @@ function buildBadge(issueData) {
 
   badge.style.backgroundColor = colorForStatus(issueData.status);
   badge.style.color = textColorForStatus(issueData.status);
-  badge.textContent = `${issueData.key} · ${issueData.status}`;
-  badge.title = issueData.summary;
+  const shortAssignee = (issueData.assignee || "").trim();
+  if (displaySettings.showExtraIssueInfo && shortAssignee) {
+    badge.textContent = `${issueData.key} · ${issueData.status} · ${shortAssignee}`;
+  } else {
+    badge.textContent = `${issueData.key} · ${issueData.status}`;
+  }
+  if (displaySettings.showExtraIssueInfo) {
+    const assignee = issueData.assignee || t("issueAssigneeUnassigned");
+    const priority = issueData.priority || t("issuePriorityUnknown");
+    badge.title = `${issueData.summary}\n${t("issueAssigneeLabel")}: ${assignee}\n${t("issuePriorityLabel")}: ${priority}`;
+  } else {
+    badge.title = issueData.summary;
+  }
   badge.setAttribute("role", "button");
   badge.setAttribute("tabindex", "0");
   badge.setAttribute("aria-label", `${issueData.key} ${issueData.status}`);
@@ -210,6 +256,13 @@ function collectEventRoots() {
 }
 
 async function processEventRoot(root) {
+  await settingsReady;
+
+  if (!displaySettings.enableCalendarBadges) {
+    removeSection(root);
+    return;
+  }
+
   if (!isVisible(root)) return;
 
   const eventText = getEventText(root);
@@ -280,5 +333,17 @@ const observer = new MutationObserver(() => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+settingsReady = loadDisplaySettings().catch(() => {});
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local") return;
+  if (!DISPLAY_SETTING_KEYS.some((key) => key in changes)) return;
+
+  const raw = {
+    ...displaySettings,
+    ...Object.fromEntries(Object.entries(changes).map(([key, value]) => [key, value.newValue]))
+  };
+  applyRawSettings(raw);
+  scheduleScan();
+});
 scheduleScan();
 

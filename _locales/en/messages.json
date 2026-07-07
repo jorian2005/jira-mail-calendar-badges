@@ -35,6 +35,10 @@
     "message": "Account details",
     "description": "Account section heading"
   },
+  "displaySettingsHeading": {
+    "message": "Display settings",
+    "description": "Display section heading"
+  },
   "labelJiraUrl": {
     "message": "Jira URL",
     "description": "Jira URL label"
@@ -111,9 +115,69 @@
     "message": "Enter a valid Jira URL",
     "description": "Validation error for URL"
   },
+  "validationInvalidJiraCloudUrl": {
+    "message": "Enter a valid Jira Cloud URL (https://*.atlassian.net)",
+    "description": "Validation error for Jira Cloud URL"
+  },
   "validationInvalidEmail": {
     "message": "Enter a valid email address",
     "description": "Validation error for email"
+  },
+  "validationInvalidMaxBadges": {
+    "message": "Maximum badges must be a number between 1 and 5",
+    "description": "Validation error for max badges"
+  },
+  "validationInvalidProjectWhitelist": {
+    "message": "Use comma-separated project codes (letters only, e.g. ABC,CLI)",
+    "description": "Validation error for project whitelist"
+  },
+  "labelEnableGmailBadges": {
+    "message": "Show badges in Gmail",
+    "description": "Toggle Gmail badges"
+  },
+  "labelEnableCalendarBadges": {
+    "message": "Show badges in Google Calendar",
+    "description": "Toggle Calendar badges"
+  },
+  "labelMaxBadgesPerItem": {
+    "message": "Maximum badges per item",
+    "description": "Max badges label"
+  },
+  "hintMaxBadgesPerItem": {
+    "message": "Set how many unique keys are shown per row/event (1-5).",
+    "description": "Max badges hint"
+  },
+  "labelProjectWhitelist": {
+    "message": "Project whitelist (optional)",
+    "description": "Project whitelist label"
+  },
+  "placeholderProjectWhitelist": {
+    "message": "ABC,CLI",
+    "description": "Project whitelist placeholder"
+  },
+  "hintProjectWhitelist": {
+    "message": "Only show keys from these project prefixes (comma-separated).",
+    "description": "Project whitelist hint"
+  },
+  "labelShowExtraIssueInfo": {
+    "message": "Show assignee and priority in tooltips",
+    "description": "Toggle extra issue info"
+  },
+  "issueAssigneeLabel": {
+    "message": "Assignee",
+    "description": "Assignee label in tooltip"
+  },
+  "issueAssigneeUnassigned": {
+    "message": "Unassigned",
+    "description": "Fallback for missing assignee"
+  },
+  "issuePriorityLabel": {
+    "message": "Priority",
+    "description": "Priority label in tooltip"
+  },
+  "issuePriorityUnknown": {
+    "message": "Unknown",
+    "description": "Fallback for missing priority"
   },
   "statusSavedCacheCleared": {
     "message": "Saved. Cache cleared ($1).",

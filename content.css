@@ -17,7 +17,7 @@
   cursor: pointer;
   white-space: nowrap;
   line-height: 16px;
-  max-width: 160px;
+  max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

@@ -179,6 +179,14 @@
       accent-color: var(--primary);
     }
 
+    .settings-group {
+      margin-top: 2px;
+      padding-top: 8px;
+      border-top: 1px solid #ebedf0;
+      display: grid;
+      gap: 8px;
+    }
+
     .actions {
       display: flex;
       gap: 8px;
@@ -295,6 +303,37 @@
             <span data-i18n="toggleShowToken">Toon token</span>
           </label>
           <p class="hint" data-i18n="hintApiToken">Vind je token in Atlassian Account settings -> Security -> API tokens.</p>
+        </div>
+
+        <div class="settings-group">
+          <h2 data-i18n="displaySettingsHeading">Display settings</h2>
+
+          <label class="inline-control" for="enableGmailBadges">
+            <input id="enableGmailBadges" type="checkbox" />
+            <span data-i18n="labelEnableGmailBadges">Show badges in Gmail</span>
+          </label>
+
+          <label class="inline-control" for="enableCalendarBadges">
+            <input id="enableCalendarBadges" type="checkbox" />
+            <span data-i18n="labelEnableCalendarBadges">Show badges in Google Calendar</span>
+          </label>
+
+          <div class="field">
+            <label for="maxBadgesPerItem" data-i18n="labelMaxBadgesPerItem">Maximum badges per item</label>
+            <input id="maxBadgesPerItem" type="number" min="1" max="5" step="1" />
+            <p class="hint" data-i18n="hintMaxBadgesPerItem">Set how many unique keys are shown per row/event (1-5).</p>
+          </div>
+
+          <div class="field">
+            <label for="projectWhitelist" data-i18n="labelProjectWhitelist">Project whitelist (optional)</label>
+            <input id="projectWhitelist" placeholder="ABC,CLI" data-i18n-placeholder="placeholderProjectWhitelist" />
+            <p class="hint" data-i18n="hintProjectWhitelist">Only show keys from these project prefixes (comma-separated).</p>
+          </div>
+
+          <label class="inline-control" for="showExtraIssueInfo">
+            <input id="showExtraIssueInfo" type="checkbox" />
+            <span data-i18n="labelShowExtraIssueInfo">Show assignee and priority in tooltips</span>
+          </label>
         </div>
 
         <div class="actions">

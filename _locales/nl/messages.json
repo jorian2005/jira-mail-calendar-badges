@@ -35,6 +35,10 @@
     "message": "Accountgegevens",
     "description": "Titel accountsectie"
   },
+  "displaySettingsHeading": {
+    "message": "Weergave-instellingen",
+    "description": "Titel weergavesectie"
+  },
   "labelJiraUrl": {
     "message": "Jira-URL",
     "description": "Label Jira URL"
@@ -111,9 +115,69 @@
     "message": "Voer een geldige Jira-URL in",
     "description": "Validatiefout URL"
   },
+  "validationInvalidJiraCloudUrl": {
+    "message": "Voer een geldige Jira Cloud URL in (https://*.atlassian.net)",
+    "description": "Validatiefout Jira Cloud URL"
+  },
   "validationInvalidEmail": {
     "message": "Voer een geldig e-mailadres in",
     "description": "Validatiefout e-mailadres"
+  },
+  "validationInvalidMaxBadges": {
+    "message": "Maximum badges moet een getal tussen 1 en 5 zijn",
+    "description": "Validatiefout maximum badges"
+  },
+  "validationInvalidProjectWhitelist": {
+    "message": "Gebruik komma-gescheiden projectcodes (alleen letters, bijvoorbeeld ABC,CLI)",
+    "description": "Validatiefout project whitelist"
+  },
+  "labelEnableGmailBadges": {
+    "message": "Toon badges in Gmail",
+    "description": "Toggle Gmail badges"
+  },
+  "labelEnableCalendarBadges": {
+    "message": "Toon badges in Google Calendar",
+    "description": "Toggle Calendar badges"
+  },
+  "labelMaxBadgesPerItem": {
+    "message": "Maximum badges per item",
+    "description": "Label maximum badges"
+  },
+  "hintMaxBadgesPerItem": {
+    "message": "Stel in hoeveel unieke keys per rij/event worden getoond (1-5).",
+    "description": "Hint maximum badges"
+  },
+  "labelProjectWhitelist": {
+    "message": "Project whitelist (optioneel)",
+    "description": "Label project whitelist"
+  },
+  "placeholderProjectWhitelist": {
+    "message": "ABC,CLI",
+    "description": "Placeholder project whitelist"
+  },
+  "hintProjectWhitelist": {
+    "message": "Toon alleen keys van deze projectprefixes (komma-gescheiden).",
+    "description": "Hint project whitelist"
+  },
+  "labelShowExtraIssueInfo": {
+    "message": "Toon assignee en prioriteit in tooltips",
+    "description": "Toggle extra issue info"
+  },
+  "issueAssigneeLabel": {
+    "message": "Assignee",
+    "description": "Label assignee in tooltip"
+  },
+  "issueAssigneeUnassigned": {
+    "message": "Niet toegewezen",
+    "description": "Fallback zonder assignee"
+  },
+  "issuePriorityLabel": {
+    "message": "Prioriteit",
+    "description": "Label prioriteit in tooltip"
+  },
+  "issuePriorityUnknown": {
+    "message": "Onbekend",
+    "description": "Fallback zonder prioriteit"
   },
   "statusSavedCacheCleared": {
     "message": "Opgeslagen. Cache opgeschoond ($1).",

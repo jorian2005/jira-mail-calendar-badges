@@ -8,6 +8,7 @@ This extension adds Jira issue badges to Gmail and Google Calendar whenever an i
 - Scans opened Google Calendar events for Jira keys and injects a Jira status section.
 - Fetches Jira data through the extension service worker (avoids page-level CORS issues).
 - Shows status badges with click-through links to Jira issues.
+- Optional tooltip details for assignee and priority.
 - Caches issue responses locally for 5 minutes to reduce Jira API calls.
 - Uses browser language via Chrome i18n (`en` and `nl` locales included).
 
@@ -46,6 +47,11 @@ This architecture keeps credentials out of page context and prevents direct page
    - **Jira URL** (for example `https://yourcompany.atlassian.net`)
    - **Atlassian email address**
    - **API token**
+   - Optional display settings:
+     - Enable/disable badges for Gmail and Calendar separately
+     - Max badges per item (1-5)
+     - Project whitelist (for example `ABC,CLI`)
+     - Toggle extra issue details in tooltips
 3. Click **Save**.
 4. Cache is cleared automatically so new settings become active right away.
 
@@ -56,8 +62,8 @@ This architecture keeps credentials out of page context and prevents direct page
 - 3-letter keys are matched normally as well (example: `CLI-2262`).
 - Jira URLs are also detected for both formats (for example `https://yourcompany.atlassian.net/browse/AB-123` and `https://yourcompany.atlassian.net/browse/CLI-2262`).
 - Maximum displayed keys:
-  - Gmail row: 3 keys
-  - Calendar event: 3 keys
+  - Gmail row: configurable (default 3, range 1-5)
+  - Calendar event: configurable (default 3, range 1-5)
 
 ## Usage
 

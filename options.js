@@ -3,6 +3,24 @@ const ERROR_CODES = {
   NOT_CONFIGURED: "ERR_NOT_CONFIGURED"
 };
 
+const SETTINGS_KEYS = [
+  "jiraUrl",
+  "jiraEmail",
+  "enableGmailBadges",
+  "enableCalendarBadges",
+  "maxBadgesPerItem",
+  "projectWhitelist",
+  "showExtraIssueInfo"
+];
+
+const DEFAULT_SETTINGS = {
+  enableGmailBadges: true,
+  enableCalendarBadges: true,
+  maxBadgesPerItem: 3,
+  projectWhitelist: "",
+  showExtraIssueInfo: true
+};
+
 function t(key, substitutions, fallback = "") {
   return chrome.i18n.getMessage(key, substitutions) || fallback || key;
 }
@@ -31,7 +49,32 @@ function normalizeJiraUrl(rawUrl) {
   if (!trimmed) return "";
 
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  return withProtocol.replace(/\/+$/, "");
+
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== "https:") {
+      return "";
+    }
+    return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "");
+  } catch (_err) {
+    return "";
+  }
+}
+
+function isValidJiraCloudUrl(jiraUrl) {
+  try {
+    const parsed = new URL(jiraUrl);
+    return parsed.protocol === "https:" && parsed.hostname.endsWith(".atlassian.net") && parsed.pathname === "/";
+  } catch (_err) {
+    return false;
+  }
+}
+
+function parseProjectWhitelist(rawValue) {
+  return (rawValue || "")
+    .split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
 }
 
 function setStatus(message, isError = false) {
@@ -108,16 +151,41 @@ function getFormValues() {
   const jiraUrl = normalizeJiraUrl(document.getElementById("jiraUrl").value);
   const jiraEmail = document.getElementById("jiraEmail").value.trim();
   const jiraToken = document.getElementById("jiraToken").value.trim();
-  return { jiraUrl, jiraEmail, jiraToken };
+  const enableGmailBadges = document.getElementById("enableGmailBadges").checked;
+  const enableCalendarBadges = document.getElementById("enableCalendarBadges").checked;
+  const maxBadgesPerItem = Number.parseInt(document.getElementById("maxBadgesPerItem").value, 10);
+  const projectWhitelist = document.getElementById("projectWhitelist").value.trim().toUpperCase();
+  const showExtraIssueInfo = document.getElementById("showExtraIssueInfo").checked;
+
+  return {
+    jiraUrl,
+    jiraEmail,
+    jiraToken,
+    enableGmailBadges,
+    enableCalendarBadges,
+    maxBadgesPerItem,
+    projectWhitelist,
+    showExtraIssueInfo
+  };
 }
 
-function validateFormValues({ jiraUrl, jiraEmail }) {
-  if (!jiraUrl || !/^https?:\/\//i.test(jiraUrl)) {
-    return t("validationInvalidUrl");
+function validateFormValues({ jiraUrl, jiraEmail, maxBadgesPerItem, projectWhitelist }) {
+  if (!jiraUrl || !isValidJiraCloudUrl(jiraUrl)) {
+    return t("validationInvalidJiraCloudUrl");
   }
 
   if (!jiraEmail || !jiraEmail.includes("@")) {
     return t("validationInvalidEmail");
+  }
+
+  if (!Number.isInteger(maxBadgesPerItem) || maxBadgesPerItem < 1 || maxBadgesPerItem > 5) {
+    return t("validationInvalidMaxBadges");
+  }
+
+  const whitelist = parseProjectWhitelist(projectWhitelist);
+  const hasInvalidProject = whitelist.some((project) => !/^[A-Z]{2,10}$/.test(project));
+  if (hasInvalidProject) {
+    return t("validationInvalidProjectWhitelist");
   }
 
   return "";
@@ -137,9 +205,14 @@ async function clearCache() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   applyI18n();
-  const settings = await chrome.storage.local.get(["jiraUrl", "jiraEmail"]);
+  const settings = await chrome.storage.local.get(SETTINGS_KEYS);
   document.getElementById("jiraUrl").value = settings.jiraUrl || "";
   document.getElementById("jiraEmail").value = settings.jiraEmail || "";
+  document.getElementById("enableGmailBadges").checked = settings.enableGmailBadges ?? DEFAULT_SETTINGS.enableGmailBadges;
+  document.getElementById("enableCalendarBadges").checked = settings.enableCalendarBadges ?? DEFAULT_SETTINGS.enableCalendarBadges;
+  document.getElementById("maxBadgesPerItem").value = String(settings.maxBadgesPerItem ?? DEFAULT_SETTINGS.maxBadgesPerItem);
+  document.getElementById("projectWhitelist").value = settings.projectWhitelist ?? DEFAULT_SETTINGS.projectWhitelist;
+  document.getElementById("showExtraIssueInfo").checked = settings.showExtraIssueInfo ?? DEFAULT_SETTINGS.showExtraIssueInfo;
   wireTokenVisibilityToggle();
   await refreshConnectionStatus();
 });
@@ -166,7 +239,15 @@ document.getElementById("settings-form").addEventListener("submit", async (event
 
   setButtonsBusy(true);
 
-  const toSave = { jiraUrl: formValues.jiraUrl, jiraEmail: formValues.jiraEmail };
+  const toSave = {
+    jiraUrl: formValues.jiraUrl,
+    jiraEmail: formValues.jiraEmail,
+    enableGmailBadges: formValues.enableGmailBadges,
+    enableCalendarBadges: formValues.enableCalendarBadges,
+    maxBadgesPerItem: formValues.maxBadgesPerItem,
+    projectWhitelist: formValues.projectWhitelist,
+    showExtraIssueInfo: formValues.showExtraIssueInfo
+  };
   if (formValues.jiraToken) {
     toSave.jiraToken = formValues.jiraToken;
   }

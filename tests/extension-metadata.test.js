@@ -94,6 +94,30 @@ test("options page i18n attributes reference existing locale keys", () => {
   }
 });
 
+test("options page includes advanced display setting controls", () => {
+  const html = readText("options.html");
+
+  const requiredIds = [
+    "enableGmailBadges",
+    "enableCalendarBadges",
+    "maxBadgesPerItem",
+    "projectWhitelist",
+    "showExtraIssueInfo"
+  ];
+
+  for (const id of requiredIds) {
+    assert.match(html, new RegExp(`id=\"${id}\"`), `Missing control in options.html: ${id}`);
+  }
+});
+
+test("Gmail and Calendar scripts read display settings from storage", () => {
+  const gmail = readText("content.js");
+  const calendar = readText("calendar-content.js");
+
+  assert.match(gmail, /DISPLAY_SETTING_KEYS = \["enableGmailBadges", "maxBadgesPerItem", "projectWhitelist", "showExtraIssueInfo"\]/);
+  assert.match(calendar, /DISPLAY_SETTING_KEYS = \["enableCalendarBadges", "maxBadgesPerItem", "projectWhitelist", "showExtraIssueInfo"\]/);
+});
+
 test("README title reflects current project naming", () => {
   const readme = readText("README.md");
   assert.match(readme, /^# Jira Mail & Calendar Badges \(Chrome Extension\)/m);

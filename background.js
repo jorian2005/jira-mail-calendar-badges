@@ -115,7 +115,16 @@ function normalizeJiraUrl(rawUrl) {
   if (!trimmed) return "";
 
   const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  return withProtocol.replace(/\/+$/, "");
+
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".atlassian.net")) {
+      return "";
+    }
+    return parsed.origin;
+  } catch (_err) {
+    return "";
+  }
 }
 
 function toBase64(input) {
@@ -139,7 +148,7 @@ async function fetchIssueFromJira(key) {
     return buildError({ key, code: ERROR_CODES.INVALID_JIRA_URL });
   }
 
-  const endpoint = `${cleanUrl}/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,status`;
+  const endpoint = `${cleanUrl}/rest/api/3/issue/${encodeURIComponent(key)}?fields=summary,status,priority,assignee`;
   const auth = toBase64(`${settings.jiraEmail}:${settings.jiraToken}`);
 
   try {
@@ -157,6 +166,8 @@ async function fetchIssueFromJira(key) {
         key: data.key,
         summary: data.fields.summary,
         status: data.fields.status.name,
+        priority: data.fields.priority?.name || "",
+        assignee: data.fields.assignee?.displayName || "",
         url: `${cleanUrl}/browse/${data.key}`
       };
     }

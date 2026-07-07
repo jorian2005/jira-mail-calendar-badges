@@ -5,11 +5,21 @@ const ROW_SELECTOR = "tr.zA";
 const HEADER_SELECTOR = "h2.hP";
 const ROW_TEXT_SELECTORS = [".y6", ".bog"];
 const VISIBLE_NAME_SELECTORS = [".yW span[email]", ".yW span.yP", ".yW [email]"];
-const MAX_BADGES_PER_ROW = 3;
+const DEFAULT_MAX_BADGES_PER_ITEM = 3;
 const SCAN_DEBOUNCE_MS = 140;
+
+const DISPLAY_SETTING_KEYS = ["enableGmailBadges", "maxBadgesPerItem", "projectWhitelist", "showExtraIssueInfo"];
 
 const ROW_STATE = new WeakMap();
 const ISSUE_IN_FLIGHT = new Map();
+
+let displaySettings = {
+  enableGmailBadges: true,
+  maxBadgesPerItem: DEFAULT_MAX_BADGES_PER_ITEM,
+  projectWhitelist: [],
+  showExtraIssueInfo: true
+};
+let settingsReady = null;
 
 const pendingRows = new Set();
 let headerDirty = true;
@@ -43,9 +53,35 @@ function normalizeKey(key) {
   return (key || "").trim().toUpperCase();
 }
 
+function parseProjectWhitelist(rawValue) {
+  const source = Array.isArray(rawValue) ? rawValue : (rawValue || "").split(",");
+  return source
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => /^[A-Z]{2,10}$/.test(value));
+}
+
+function applyRawSettings(raw) {
+  const parsedMax = Number.parseInt(String(raw.maxBadgesPerItem ?? DEFAULT_MAX_BADGES_PER_ITEM), 10);
+  displaySettings = {
+    enableGmailBadges: raw.enableGmailBadges ?? true,
+    maxBadgesPerItem: Number.isInteger(parsedMax) ? Math.max(1, Math.min(5, parsedMax)) : DEFAULT_MAX_BADGES_PER_ITEM,
+    projectWhitelist: parseProjectWhitelist(raw.projectWhitelist),
+    showExtraIssueInfo: raw.showExtraIssueInfo ?? true
+  };
+}
+
+async function loadDisplaySettings() {
+  const raw = await chrome.storage.local.get(DISPLAY_SETTING_KEYS);
+  applyRawSettings(raw);
+}
+
 function extractKeys(text) {
   const matches = (text || "").toUpperCase().match(JIRA_KEY_REGEX) || [];
-  return Array.from(new Set(matches)).slice(0, MAX_BADGES_PER_ROW);
+  const unique = Array.from(new Set(matches));
+  const filtered = displaySettings.projectWhitelist.length
+    ? unique.filter((key) => displaySettings.projectWhitelist.some((project) => key.startsWith(`${project}-`)))
+    : unique;
+  return filtered.slice(0, displaySettings.maxBadgesPerItem);
 }
 
 function fetchIssue(key) {
@@ -108,8 +144,19 @@ function buildBadge(issueData) {
 
   badge.style.backgroundColor = colorForStatus(issueData.status);
   badge.style.color = textColorForStatus(issueData.status);
-  badge.textContent = `${issueData.key} · ${issueData.status}`;
-  badge.title = issueData.summary;
+  const shortAssignee = (issueData.assignee || "").trim();
+  if (displaySettings.showExtraIssueInfo && shortAssignee) {
+    badge.textContent = `${issueData.key} · ${issueData.status} · ${shortAssignee}`;
+  } else {
+    badge.textContent = `${issueData.key} · ${issueData.status}`;
+  }
+  if (displaySettings.showExtraIssueInfo) {
+    const assignee = issueData.assignee || t("issueAssigneeUnassigned");
+    const priority = issueData.priority || t("issuePriorityUnknown");
+    badge.title = `${issueData.summary}\n${t("issueAssigneeLabel")}: ${assignee}\n${t("issuePriorityLabel")}: ${priority}`;
+  } else {
+    badge.title = issueData.summary;
+  }
   badge.setAttribute("role", "button");
   badge.setAttribute("tabindex", "0");
   badge.setAttribute("aria-label", `${issueData.key} ${issueData.status}`);
@@ -187,6 +234,12 @@ function queueRow(row) {
 
 async function processRow(row) {
   if (!row || !row.isConnected) return;
+  await settingsReady;
+
+  if (!displaySettings.enableGmailBadges) {
+    removeRowContainer(row);
+    return;
+  }
 
   const rowText = getRowText(row);
   const keys = extractKeys(rowText);
@@ -262,6 +315,14 @@ function removeHeaderContainer() {
 }
 
 async function processOpenedEmailHeader() {
+  await settingsReady;
+
+  if (!displaySettings.enableGmailBadges) {
+    headerFingerprint = "";
+    removeHeaderContainer();
+    return;
+  }
+
   const subjectHeader = document.querySelector(HEADER_SELECTOR);
   if (!subjectHeader) {
     headerFingerprint = "";
@@ -369,6 +430,21 @@ function handleMutations(mutations) {
 
 const observer = new MutationObserver(handleMutations);
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+settingsReady = loadDisplaySettings().catch(() => {});
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local") return;
+  if (!DISPLAY_SETTING_KEYS.some((key) => key in changes)) return;
+
+  const raw = {
+    ...displaySettings,
+    ...Object.fromEntries(Object.entries(changes).map(([key, value]) => [key, value.newValue]))
+  };
+  applyRawSettings(raw);
+  queueAllRows();
+  headerDirty = true;
+  scheduleFlush();
+});
 
 queueAllRows();
 headerDirty = true;
